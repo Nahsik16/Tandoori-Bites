@@ -70,6 +70,11 @@
   cursor: pointer;
   font-weight: 500;
 }
+.login-popup-message{
+  color: #2e7d32;
+  font-size: 13px;
+  margin-top: -10px;
+}
 
 @media (max-width: 10px) {
   .login-popup-container button {
