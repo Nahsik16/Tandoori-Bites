@@ -5,8 +5,13 @@ import validator from "validator";
 import crypto from "crypto";
 import { sendPasswordResetEmail } from "../config/email.js";
 
-const verifyRecaptcha = async (recaptchaToken, remoteIp) => {
-  const recaptchaSecret = process.env.RECAPTCHA_SECRET_KEY?.trim();
+const verifyRecaptcha = async (recaptchaToken, remoteIp, options = {}) => {
+  const { required = true } = options;
+  const recaptchaSecret = process.env.RECAPTCHA_SECRET_KEY;
+
+  if (!recaptchaToken && !required) {
+    return { valid: true };
+  }
 
   if (!recaptchaToken) {
     return { valid: false, message: "Please complete captcha verification" };
@@ -61,7 +66,7 @@ const loginUser =async(req,res) =>{
   const {email,password,recaptchaToken}=req.body;
   try {
     const remoteIp = req.headers["x-forwarded-for"]?.split(",")[0]?.trim() || req.socket.remoteAddress;
-    const captchaCheck = await verifyRecaptcha(recaptchaToken, remoteIp);
+    const captchaCheck = await verifyRecaptcha(recaptchaToken, remoteIp, { required: false });
     if (!captchaCheck.valid) {
       return res.json({success:false,message:captchaCheck.message});
     }

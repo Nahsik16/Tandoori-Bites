@@ -28,6 +28,7 @@ const LoginPopup = ({setShowLogin}) => {
   }
   const onLogin =async (event)=>{
     event.preventDefault();
+    const isSignUp = currState === "Sign Up";
 
     if(currState==="Reset"){
       try {
@@ -45,12 +46,12 @@ const LoginPopup = ({setShowLogin}) => {
       return;
     }
 
-    if (!recaptchaSiteKey) {
+    if (isSignUp && !recaptchaSiteKey) {
       alert("reCAPTCHA is not configured. Please contact support.")
       return;
     }
 
-    if (!captchaToken) {
+    if (isSignUp && !captchaToken) {
       alert("Please complete the reCAPTCHA verification")
       return;
     }
@@ -62,7 +63,8 @@ const LoginPopup = ({setShowLogin}) => {
   else{
     newUrl += "/api/user/register";
   }
-  const response = await axios.post(newUrl,{...data,recaptchaToken: captchaToken});
+  const payload = isSignUp ? { ...data, recaptchaToken: captchaToken } : data;
+  const response = await axios.post(newUrl,payload);
   if(response.data.success){
    setToken(response.data.token);
     localStorage.setItem("token",response.data.token);
@@ -98,7 +100,7 @@ const handleStateChange = (state) => {
   {currState==="Reset"?<></>:<input name='password' onChange={onChangeHandler} value={data.password}  type="password" placeholder='password' required/>}
 </div>
 
-{currState!=="Reset" ? (
+{currState==="Sign Up" ? (
   <div className="login-popup-captcha">
     {recaptchaSiteKey ? (
       <ReCAPTCHA
