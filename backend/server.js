@@ -14,6 +14,8 @@ const defaultOrigins = [
   "http://localhost:5174",
   "http://127.0.0.1:5173",
   "http://127.0.0.1:5174",
+  "https://tandoori-bites-frontend.onrender.com",
+  "https://tandoori-bites-admin.onrender.com",
 ];
 const envOrigins = [process.env.FRONTEND_URL, process.env.CORS_ORIGINS]
   .filter(Boolean)
@@ -25,7 +27,8 @@ const allowedOrigins = [...new Set([...defaultOrigins, ...envOrigins])];
 app.use (express.json())
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) {
+    const isRenderDomain = typeof origin === "string" && origin.endsWith(".onrender.com");
+    if (!origin || allowedOrigins.includes(origin) || isRenderDomain) {
       return callback(null, true);
     }
     return callback(new Error("Not allowed by CORS"));
