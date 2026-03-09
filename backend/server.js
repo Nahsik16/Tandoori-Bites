@@ -1,9 +1,9 @@
+import "./config/env.js"
 import express from "express"
 import cors from "cors"
 import { connectDB } from "./config/db.js"
 import foodRouter from "./routes/foodRoute.js"
 import userRouter from "./routes/userRoute.js"
-import 'dotenv/config.js'
 import cartRouter from "./routes/cartRoute.js"
 import orderRouter from "./routes/orderRoute.js"
 //app config
@@ -50,4 +50,5 @@ app.get("/",(req,res)=>{
 
 app.listen(port,()=>{
   console.log(`server started on http://localhost:${port}`)
+  console.log(`reCAPTCHA configured: ${Boolean(process.env.RECAPTCHA_SECRET_KEY?.trim())}`)
 })

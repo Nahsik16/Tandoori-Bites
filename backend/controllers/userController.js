@@ -6,20 +6,19 @@ import crypto from "crypto";
 import { sendPasswordResetEmail } from "../config/email.js";
 
 const verifyRecaptcha = async (recaptchaToken, remoteIp) => {
+  const recaptchaSecret = process.env.RECAPTCHA_SECRET_KEY?.trim();
+
   if (!recaptchaToken) {
     return { valid: false, message: "Please complete captcha verification" };
   }
 
-  if (!process.env.RECAPTCHA_SECRET_KEY) {
-    if (process.env.NODE_ENV !== "production") {
-      return { valid: true };
-    }
+  if (!recaptchaSecret) {
     return { valid: false, message: "Captcha is not configured" };
   }
 
   try {
     const params = new URLSearchParams();
-    params.append("secret", process.env.RECAPTCHA_SECRET_KEY);
+    params.append("secret", recaptchaSecret);
     params.append("response", recaptchaToken);
     if (remoteIp) {
       params.append("remoteip", remoteIp);
