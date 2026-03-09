@@ -11,6 +11,9 @@ const verifyRecaptcha = async (recaptchaToken, remoteIp) => {
   }
 
   if (!process.env.RECAPTCHA_SECRET_KEY) {
+    if (process.env.NODE_ENV !== "production") {
+      return { valid: true };
+    }
     return { valid: false, message: "Captcha is not configured" };
   }
 
@@ -31,7 +34,17 @@ const verifyRecaptcha = async (recaptchaToken, remoteIp) => {
     const captchaResult = await googleResponse.json();
 
     if (!captchaResult.success) {
-      return { valid: false, message: "Captcha verification failed" };
+      const errorCodes = Array.isArray(captchaResult["error-codes"])
+        ? captchaResult["error-codes"].join(", ")
+        : "unknown";
+      console.log("reCAPTCHA verification failed:", errorCodes);
+      return {
+        valid: false,
+        message:
+          process.env.NODE_ENV === "production"
+            ? "Captcha verification failed"
+            : `Captcha verification failed (${errorCodes})`,
+      };
     }
 
     if (typeof captchaResult.score === "number" && captchaResult.score < 0.5) {
