@@ -75,6 +75,15 @@
   font-size: 13px;
   margin-top: -10px;
 }
+.login-popup-captcha{
+  display: flex;
+  justify-content: center;
+}
+.login-popup-error{
+  color: #d32f2f;
+  font-size: 13px;
+  margin-top: -10px;
+}
 
 @media (max-width: 10px) {
   .login-popup-container button {

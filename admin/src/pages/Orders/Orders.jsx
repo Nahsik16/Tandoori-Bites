@@ -11,17 +11,29 @@ const Orders = ({ url }) => {
 
   const fetchAllOrders = async () => {
     try {
-      const response = await axios.get(`${url}/api/order/list`);
-      if (response.data.success) {
-        setOrders(response.data.data);
-        console.log(response.data.data);
-      } else {
-        toast.error('Error fetching orders');
-      }
-    } catch (error) {
-      toast.error('Network error');
+    const response = await axios.post(`${url}/api/order/list`, {});
+    if (response.data.success) {
+      setOrders(response.data.data);
+      console.log(response.data.data);
+    } else {
+      toast.error('Error fetching orders');
     }
+  } catch (error) {
+    toast.error('Network error');
+  }
+    // try {
+    //   const response = await axios.get(`${url}/api/order/list`, {});
+    //   if (response.data.success) {
+    //     setOrders(response.data.data);
+    //     console.log(response.data.data);
+    //   } else {
+    //     toast.error('Error fetching orders');
+    //   }
+    // } catch (error) {
+    //   toast.error('Network error');
+    // }
   };
+  
 
   useEffect(() => {
     fetchAllOrders();

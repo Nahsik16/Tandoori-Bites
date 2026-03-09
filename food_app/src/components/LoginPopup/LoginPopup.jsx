@@ -6,11 +6,16 @@ import { assets } from '../../assets/assets'
 import { useContext } from 'react'
 import { StoreContext } from '../../context/StoreContext'
 import axios from "axios"
+import ReCAPTCHA from "react-google-recaptcha"
+import { useRef } from 'react'
 const LoginPopup = ({setShowLogin}) => {
 
   const {url,setToken} =useContext(StoreContext)
   const[currState,setCurrState] =useState("Login")
   const [resetMessage, setResetMessage] = useState("")
+  const [captchaToken, setCaptchaToken] = useState("")
+  const recaptchaRef = useRef(null)
+  const recaptchaSiteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY
   const [data,setData] = useState({
     name:"",
     email:"",
@@ -40,6 +45,16 @@ const LoginPopup = ({setShowLogin}) => {
       return;
     }
 
+    if (!recaptchaSiteKey) {
+      alert("reCAPTCHA is not configured. Please contact support.")
+      return;
+    }
+
+    if (!captchaToken) {
+      alert("Please complete the reCAPTCHA verification")
+      return;
+    }
+
     let newUrl =url;
     if(currState==="Login"){
       newUrl += "/api/user/login";
@@ -47,7 +62,7 @@ const LoginPopup = ({setShowLogin}) => {
   else{
     newUrl += "/api/user/register";
   }
-  const response = await axios.post(newUrl,data);
+  const response = await axios.post(newUrl,{...data,recaptchaToken});
   if(response.data.success){
    setToken(response.data.token);
     localStorage.setItem("token",response.data.token);
@@ -55,6 +70,19 @@ const LoginPopup = ({setShowLogin}) => {
   }
   else{
     alert(response.data.message)
+    setCaptchaToken("")
+    if (recaptchaRef.current) {
+      recaptchaRef.current.reset()
+    }
+  }
+}
+
+const handleStateChange = (state) => {
+  setCurrState(state)
+  setResetMessage("")
+  setCaptchaToken("")
+  if (recaptchaRef.current) {
+    recaptchaRef.current.reset()
   }
 }
   return (
@@ -70,6 +98,20 @@ const LoginPopup = ({setShowLogin}) => {
   {currState==="Reset"?<></>:<input name='password' onChange={onChangeHandler} value={data.password}  type="password" placeholder='password' required/>}
 </div>
 
+{currState!=="Reset" ? (
+  <div className="login-popup-captcha">
+    {recaptchaSiteKey ? (
+      <ReCAPTCHA
+        ref={recaptchaRef}
+        sitekey={recaptchaSiteKey}
+        onChange={(token) => setCaptchaToken(token || "")}
+      />
+    ) : (
+      <p className='login-popup-error'>reCAPTCHA site key is missing.</p>
+    )}
+  </div>
+) : <></>}
+
 <button type='submit'>
   {currState==="Sign Up"?"Create Account":currState==="Reset"?"Send reset link":"Login"}
 </button>
@@ -82,12 +124,12 @@ const LoginPopup = ({setShowLogin}) => {
   :<></>}
   {currState==="Login"
   ?<>
-    <p>Forgot your password? <span onClick={()=> {setCurrState("Reset"); setResetMessage("")}}>Reset here</span></p>
-    <p>Create a new account?<span onClick={()=> setCurrState("Sign Up")}>Click here</span></p>
+    <p>Forgot your password? <span onClick={()=> handleStateChange("Reset")}>Reset here</span></p>
+    <p>Create a new account?<span onClick={()=> handleStateChange("Sign Up")}>Click here</span></p>
   </>
     :currState==="Reset"
-    ?<p>Back to login?<span onClick={()=> setCurrState("Login")}>Login here</span></p>
-    :<p>Already have an account ?<span onClick={()=> setCurrState("Login")}>Login here</span></p>
+    ?<p>Back to login?<span onClick={()=> handleStateChange("Login")}>Login here</span></p>
+    :<p>Already have an account ?<span onClick={()=> handleStateChange("Login")}>Login here</span></p>
     }
   </form>
     </div>

@@ -4,10 +4,56 @@ import bcrypt from "bcryptjs";
 import validator from "validator";
 import crypto from "crypto";
 import { sendPasswordResetEmail } from "../config/email.js";
+
+const verifyRecaptcha = async (recaptchaToken, remoteIp) => {
+  if (!recaptchaToken) {
+    return { valid: false, message: "Please complete captcha verification" };
+  }
+
+  if (!process.env.RECAPTCHA_SECRET_KEY) {
+    return { valid: false, message: "Captcha is not configured" };
+  }
+
+  try {
+    const params = new URLSearchParams();
+    params.append("secret", process.env.RECAPTCHA_SECRET_KEY);
+    params.append("response", recaptchaToken);
+    if (remoteIp) {
+      params.append("remoteip", remoteIp);
+    }
+
+    const googleResponse = await fetch("https://www.google.com/recaptcha/api/siteverify", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: params.toString(),
+    });
+
+    const captchaResult = await googleResponse.json();
+
+    if (!captchaResult.success) {
+      return { valid: false, message: "Captcha verification failed" };
+    }
+
+    if (typeof captchaResult.score === "number" && captchaResult.score < 0.5) {
+      return { valid: false, message: "Captcha score too low" };
+    }
+
+    return { valid: true };
+  } catch (error) {
+    console.log(error);
+    return { valid: false, message: "Captcha verification error" };
+  }
+};
 //login user
 const loginUser =async(req,res) =>{
-  const {email,password}=req.body;
+  const {email,password,recaptchaToken}=req.body;
   try {
+    const remoteIp = req.headers["x-forwarded-for"]?.split(",")[0]?.trim() || req.socket.remoteAddress;
+    const captchaCheck = await verifyRecaptcha(recaptchaToken, remoteIp);
+    if (!captchaCheck.valid) {
+      return res.json({success:false,message:captchaCheck.message});
+    }
+
     const user = await userModel.findOne({email});
     if(!user){
       return res.json({success:false,message:"Invalid credentials"});
@@ -29,8 +75,14 @@ const createToken =(id)=>{
   return jwt.sign({id},process.env.JWT_SECRET);
 }
 const registerUser =async(req,res)=>{
-const {name,password,email}=req.body;
+const {name,password,email,recaptchaToken}=req.body;
 try {
+  const remoteIp = req.headers["x-forwarded-for"]?.split(",")[0]?.trim() || req.socket.remoteAddress;
+  const captchaCheck = await verifyRecaptcha(recaptchaToken, remoteIp);
+  if (!captchaCheck.valid) {
+    return res.json({success:false,message:captchaCheck.message});
+  }
+
   const exists =await userModel.findOne({email});
   if(exists){
    return res.json({success:false, message:"User already exists"});
