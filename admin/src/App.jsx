@@ -9,7 +9,7 @@ import Orders from './pages/Orders/Orders';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 const App = () => {
-  const url ="https://tandoori-bites.onrender.com";
+  const url = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
   return (
     <div>
       <ToastContainer />

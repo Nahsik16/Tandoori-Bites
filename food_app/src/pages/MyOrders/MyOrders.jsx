@@ -10,8 +10,14 @@ const MyOrders = () => {
   const [data,setData]=useState([]);
   
   const fetchOrders =async ()=>{
-    const response =await axios.port(url+"/api/order/userorders",{},{headers:{token}})
-    setData(response.data.data);
+    try {
+      const response = await axios.post(url+"/api/order/userorders",{}, {headers:{token}})
+      if (response.data.success) {
+        setData(response.data.data || []);
+      }
+    } catch (error) {
+      console.log(error);
+    }
   }
 
   useEffect(()=>{
@@ -19,33 +25,46 @@ const MyOrders = () => {
       fetchOrders();
     }
   },[token])
+
+  const getImageSrc = (order) => {
+    const firstItemImage = order?.items?.[0]?.image;
+    return firstItemImage ? `${url}/images/${firstItemImage}` : assets.parcel_icon;
+  };
+
   return (
     <div className='my-orders'>
       <h2>My Orders</h2>
       <div className="container">
-        {
-          data.map((order,index)=>{
+        {data.length === 0 ? (
+          <div className="my-orders-empty">
+            <img src={assets.parcel_icon} alt="No orders" />
+            <p>No orders found yet.</p>
+          </div>
+        ) : (
+          data.map((order) => {
+            const statusClass = order.status?.toLowerCase().replace(/\s+/g, '-') || 'processing';
             return(
-              <div key={index} className="my-orders-order">
-                <img src={assets.parcel_icon} alt=""  />
-                <p>
-                  {order.items.map((item,index)=>{
-                    if (index === order.items.length-1) {
-                      return item.name+"X"+item.quantity                      
-                    }
-                    else{
-                      return item.name+"X"+item.quantity+","
-                    }
-                  })}
-                </p>
-                <p>₹{order.amount}.00</p>
-                <p>Items:{order.items.length}</p>
-                <p><span>&#x@25fc;</span><b>{order.status}</b></p>
-                <button>Track Order</button>*
+              <div key={order._id} className="my-orders-order">
+                <img className='order-thumb' src={getImageSrc(order)} alt="Order item" />
+                <div className="order-details">
+                  <p className="order-items">
+                    {order.items.map((item, index) => `${item.name} x ${item.quantity}${index < order.items.length - 1 ? ', ' : ''}`)}
+                  </p>
+                  <p className="order-meta">{new Date(order.date).toLocaleString()}</p>
+                </div>
+                <div className="order-summary">
+                  <p className="order-price">₹{order.amount}.00</p>
+                  <p>Items: {order.items.length}</p>
+                  <p>{order.payment ? 'Paid' : 'Pending Payment'}</p>
+                </div>
+                <div className="order-actions">
+                  <p className={`order-status ${statusClass}`}><span>&#x25fc;</span><b>{order.status}</b></p>
+                  <button onClick={fetchOrders}>Refresh Status</button>
+                </div>
               </div>
             )
           })
-        }
+        )}
       </div>
 
     </div>

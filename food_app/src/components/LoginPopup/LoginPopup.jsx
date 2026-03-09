@@ -62,7 +62,7 @@ const LoginPopup = ({setShowLogin}) => {
   else{
     newUrl += "/api/user/register";
   }
-  const response = await axios.post(newUrl,{...data,recaptchaToken});
+  const response = await axios.post(newUrl,{...data,recaptchaToken: captchaToken});
   if(response.data.success){
    setToken(response.data.token);
     localStorage.setItem("token",response.data.token);

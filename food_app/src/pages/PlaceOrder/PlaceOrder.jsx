@@ -10,6 +10,7 @@ import { useNavigate } from 'react-router-dom';
 const PlaceOrder = () => {
   const navigate =useNavigate();
   const {getTotalCartAmount,token,food_list,cartItems,url}= useContext(StoreContext);
+  const [paymentMethod, setPaymentMethod] = useState("stripe");
   const [data,setData]=useState({
     firstName:"",
     lastName:"",
@@ -26,6 +27,72 @@ const PlaceOrder = () => {
     const value = event.target.value;
     setData(data=>({...data,[name]:value}))
   }
+
+  const openRazorpayCheckout = async (orderData) => {
+    if (!window.Razorpay) {
+      alert("Razorpay SDK failed to load. Please refresh and try again.");
+      return;
+    }
+
+    const response = await axios.post(url + "/api/order/razorpay/create", orderData, { headers: { token } });
+
+    if (!response.data.success) {
+      alert(response.data.message || "Unable to start Razorpay checkout");
+      return;
+    }
+
+    const { key, amount, currency, razorpayOrderId, appOrderId } = response.data;
+
+    const options = {
+      key,
+      amount,
+      currency,
+      name: "Tandoori Bites",
+      description: "Food Order Payment",
+      order_id: razorpayOrderId,
+      prefill: {
+        name: `${data.firstName} ${data.lastName}`,
+        email: data.email,
+        contact: data.phone,
+      },
+      method: {
+        upi: true,
+        card: true,
+        netbanking: true,
+        wallet: true,
+      },
+      handler: async function (razorpayResponse) {
+        try {
+          const verifyResponse = await axios.post(
+            url + "/api/order/razorpay/verify",
+            {
+              ...razorpayResponse,
+              orderId: appOrderId,
+            },
+            { headers: { token } }
+          );
+
+          if (verifyResponse.data.success) {
+            navigate("/myorders");
+          } else {
+            alert(verifyResponse.data.message || "Payment verification failed");
+            navigate("/cart");
+          }
+        } catch (error) {
+          console.log(error);
+          alert("Payment verification failed");
+          navigate("/cart");
+        }
+      },
+      theme: {
+        color: "#ff6347",
+      },
+    };
+
+    const razorpay = new window.Razorpay(options);
+    razorpay.open();
+  };
+
   const placeOrder = async (event) => {
     event.preventDefault();
     let orderItems = [];
@@ -41,7 +108,13 @@ const PlaceOrder = () => {
       items:orderItems,
       amount:getTotalCartAmount()+40,
     }
-    let response =await axios.post(url+"/api/order/place",orderData,{headers:{token}})   
+
+    if (paymentMethod === "razorpay") {
+      await openRazorpayCheckout(orderData);
+      return;
+    }
+
+    let response =await axios.post(url+"/api/order/place",orderData,{headers:{token}})
     if(response.data.success){
       const {session_url}=response.data;
       window.location.replace(session_url);
@@ -83,6 +156,29 @@ const PlaceOrder = () => {
       <div className="place-order-right">
       <div className="cart-total">
         <h2>Cart Total</h2>
+        <div className="payment-methods">
+          <p className="payment-title">Payment Method</p>
+          <label>
+            <input
+              type="radio"
+              name="paymentMethod"
+              value="stripe"
+              checked={paymentMethod === "stripe"}
+              onChange={(event) => setPaymentMethod(event.target.value)}
+            />
+            Card / Stripe
+          </label>
+          <label>
+            <input
+              type="radio"
+              name="paymentMethod"
+              value="razorpay"
+              checked={paymentMethod === "razorpay"}
+              onChange={(event) => setPaymentMethod(event.target.value)}
+            />
+            UPI / Razorpay
+          </label>
+        </div>
         <div>
           <div className="cart-total-details">
             <p>Subtotal</p>
@@ -99,7 +195,7 @@ const PlaceOrder = () => {
             <p>₹{getTotalCartAmount()===0?0:getTotalCartAmount()+ 40}</p>
           </div>
           </div>          
-        <button type='submit' >Proceed to Pay</button>
+        <button type='submit' >{paymentMethod === "razorpay" ? "Pay with UPI" : "Proceed to Pay"}</button>
         </div>
       </div>
     </form>

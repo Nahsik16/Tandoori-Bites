@@ -34,3 +34,26 @@
 .place-order .cart-total-button{
   margin-top: 30px;
 }
+
+.payment-methods {
+  margin-bottom: 16px;
+  border: 1px solid #ececec;
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.payment-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+}
+
+.payment-methods label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #4a4a4a;
+}

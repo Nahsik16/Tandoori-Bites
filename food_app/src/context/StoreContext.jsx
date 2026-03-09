@@ -5,7 +5,7 @@ import { createContext, useEffect, useState } from "react";
 export const StoreContext = createContext(null);
 const StoreContextProvider = (props) => {
   const [cartItems, setcartItems] = useState({});
-  const url = "http://localhost:4000";
+  const url = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
   const [token,setToken]=useState("");
   const [food_list,setFoodList]=useState([])
 
@@ -42,12 +42,20 @@ const StoreContextProvider = (props) => {
     setFoodList(response.data.data);
   }
   const loadCartData =async (token)=>{
-    const response = await axios.post(url+"/api/cart/get",{},{
-      headers:{
-        token
+    try {
+      const response = await axios.post(url+"/api/cart/get",{}, {
+        headers:{
+          token
+        }
+      });
+      if (response.data?.success && response.data?.data && typeof response.data.data === "object") {
+        setcartItems(response.data.data);
+      } else {
+        setcartItems({});
       }
-    });
-    setcartItems(response.data.data);
+    } catch (error) {
+      setcartItems({});
+    }
   }
   useEffect(()=>{
     async function loadData(){
