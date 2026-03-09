@@ -33,6 +33,30 @@ const Orders = ({ url }) => {
     //   toast.error('Network error');
     // }
   };
+
+  const statusHandler = async (event, orderId) => {
+    const nextStatus = event.target.value;
+
+    try {
+      const response = await axios.post(`${url}/api/order/status`, {
+        orderId,
+        status: nextStatus,
+      });
+
+      if (response.data.success) {
+        setOrders((prevOrders) =>
+          prevOrders.map((order) =>
+            order._id === orderId ? { ...order, status: nextStatus } : order
+          )
+        );
+        toast.success('Order status updated');
+      } else {
+        toast.error(response.data.message || 'Unable to update status');
+      }
+    } catch (error) {
+      toast.error('Network error while updating status');
+    }
+  };
   
 
   useEffect(() => {
@@ -62,12 +86,15 @@ const Orders = ({ url }) => {
             </div>
             <p>Items: {order.items.length}</p>
             <p>₹{order.amount}.00</p>
-            <select>
-              <option value="Food Processing">Food Processing</option>
+            <select onChange={(event) => statusHandler(event, order._id)} value={order.status}>
+              <option value="Processing">Processing</option>
               <option value="Out for Delivery">Out for Delivery</option>
               <option value="Delivered">Delivered</option>
+              <option value="Cancelled">Cancelled</option>
             </select>
             <p><span>&#x25fc;</span><b>{order.status}</b></p>
+            <p>{order.payment ? 'Paid' : 'Pending Payment'}</p>
+            <p>{new Date(order.date).toLocaleString()}</p>
           </div>
         ))}
       </div>

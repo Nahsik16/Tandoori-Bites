@@ -5,7 +5,7 @@ import Stripe from "stripe";
 const stripe =new Stripe(process.env.STRIPE_CREATE_KEY);
 //place order
 const placeOrder =async (req,res) => {
-  const frontend_url ="https://tandoori-bites-frontend.onrender.com";
+  const frontend_url = process.env.FRONTEND_URL || "http://localhost:5173";
  try{
   const newOrder = new orderModel ({
     userId:req.body.userId,
@@ -54,8 +54,8 @@ const placeOrder =async (req,res) => {
 const verifyOrder= async (req,res)=>{
   const {orderId,success} =req.body;
   try {
-    if(success){
-      await orderModel.findByIdAndUpdate(orderId,{payment:"true"});
+    if(success === true || success === "true"){
+      await orderModel.findByIdAndUpdate(orderId,{payment:true,status:"Out for Delivery"});
       res.json({success:true,message:"paid"})
     }else{
       await orderModel.findByIdAndDelete(orderId);
@@ -85,4 +85,20 @@ const listOrders= async(req,res)=>{
     res.json({success:false,message:"internal server error"})
   }
 }
-export{placeOrder,verifyOrder,userOrders,listOrders}
+const updateOrderStatus = async (req, res) => {
+  const { orderId, status } = req.body;
+
+  if (!orderId || !status) {
+    return res.json({ success: false, message: "orderId and status are required" });
+  }
+
+  try {
+    await orderModel.findByIdAndUpdate(orderId, { status });
+    res.json({ success: true, message: "order status updated" });
+  } catch (error) {
+    console.log(error);
+    res.json({ success: false, message: "internal server error" });
+  }
+}
+
+export{placeOrder,verifyOrder,userOrders,listOrders,updateOrderStatus}
