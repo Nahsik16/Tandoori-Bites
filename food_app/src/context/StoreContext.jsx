@@ -5,7 +5,7 @@ import { createContext, useEffect, useState } from "react";
 export const StoreContext = createContext(null);
 const StoreContextProvider = (props) => {
   const [cartItems, setcartItems] = useState({});
-  const url = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
+  const url = import.meta.env.VITE_API_BASE_URL || (import.meta.env.DEV ? "http://localhost:4000" : "https://tandoori-bites.onrender.com");
   const [token,setToken]=useState("");
   const [food_list,setFoodList]=useState([])
 
